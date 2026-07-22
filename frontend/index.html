@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Görevlerim</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <link rel="stylesheet" href="./src/style.css" />
+  <script type="module" src="./src/app.js"></script>
+</head>
+<body>
+
+  <!-- ── AUTH ─────────────────────────────────────── -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="logo-icon"><i class="ti ti-check"></i></div>
+        <span class="logo-text">Görevlerim</span>
+      </div>
+      <h2 id="auth-title">Giriş yap</h2>
+      <input id="email-input" type="email" placeholder="E-posta" />
+      <input id="password-input" type="password" placeholder="Şifre" />
+      <div id="auth-error"></div>
+      <button id="login-btn">Giriş yap</button>
+      <p class="auth-switch">
+        Hesabın yok mu?
+        <button id="switch-auth">Kayıt ol</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- ── APP ──────────────────────────────────────── -->
+  <div id="app-screen">
+
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon"><i class="ti ti-check"></i></div>
+        <span class="logo-text">Görevlerim</span>
+      </div>
+
+      <span class="nav-label">Görünüm</span>
+      <button class="nav-item active" data-filter="ALL">
+        <i class="ti ti-list"></i> Tümü
+        <span class="nav-count" id="count-all">0</span>
+      </button>
+      <button class="nav-item" data-filter="TODAY">
+        <i class="ti ti-sun"></i> Bugün
+        <span class="nav-count" id="count-today">0</span>
+      </button>
+      <button class="nav-item" data-filter="WEEK">
+        <i class="ti ti-calendar"></i> Bu hafta
+      </button>
+      <button class="nav-item" data-filter="MONTH">
+        <i class="ti ti-calendar-month"></i> Bu ay
+      </button>
+
+      <span class="nav-label">Filtre</span>
+      <button class="nav-item" data-filter="ACTIVE">
+        <i class="ti ti-circle"></i> Aktif
+      </button>
+      <button class="nav-item" data-filter="COMPLETED">
+        <i class="ti ti-circle-check"></i> Tamamlanan
+      </button>
+
+      <div class="sidebar-footer">
+        <div class="user-row">
+          <div class="user-avatar" id="user-avatar">A</div>
+          <span class="user-name" id="user-display">Kullanıcı</span>
+          <button id="logout-btn" title="Çıkış">
+            <i class="ti ti-logout"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-panel">
+
+      <header class="topbar">
+        <h1 id="topbar-title">Tümü</h1>
+      </header>
+
+      <div class="content">
+
+        <!-- İstatistik kartları -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="stat-total">0</div>
+            <div class="stat-label">Toplam görev</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val success" id="stat-done">0</div>
+            <div class="stat-label">Tamamlanan</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-remaining">0</div>
+            <div class="stat-label">Kalan</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val accent" id="stat-rate">%0</div>
+            <div class="stat-label">Tamamlanma</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val accent" id="stat-worked">0:00</div>
+            <div class="stat-label">Çalışma süresi</div>
+          </div>
+        </div>
+        <!-- Pomodoro Banner -->
+        <div id="pomodoro-banner" style="display:none">
+          <div id="pomodoro-task-name">Görev seçilmedi</div>
+          <div class="pomodoro-controls">
+            <span id="pomodoro-time">25:00</span>
+            <div class="pomodoro-duration">
+              <input 
+                id="pomodoro-duration-input" 
+                type="number" 
+                min="1" 
+                max="120" 
+                value="25" 
+                title="Süre (dakika)"
+              />
+              <span>dk</span>
+            </div>
+            <button id="pomodoro-play" title="Başlat">
+              <i class="ti ti-player-play"></i>
+            </button>
+            <button id="pomodoro-close" title="Kapat">
+              <i class="ti ti-x"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Görev ekle -->
+        <div class="add-row">
+          <i class="ti ti-plus"></i>
+          <input id="new-task-input" placeholder="Yeni görev ekle..." />
+          <button id="add-btn">Ekle</button>
+        </div>
+
+        <!-- Hata -->
+        <div id="error-banner"></div>
+
+        <!-- Görev listesi -->
+        <div class="section-label">
+          <i class="ti ti-list"></i>
+          <span id="section-title">Görevler</span>
+        </div>
+
+        <div id="task-list"></div>
+
+        <!-- Boş durum -->
+        <div id="empty-state">
+          <i class="ti ti-clipboard-list"></i>
+          <p id="empty-text">Henüz görev yok.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- ── Profil Modalı ─────────────────────────────── -->
+<div id="profile-modal" style="display:none">
+  <div class="modal-overlay" id="modal-overlay"></div>
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Profil</h3>
+      <button class="modal-close" id="modal-close">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="profile-avatar" id="profile-avatar-big">A</div>
+
+      <div class="field-group">
+        <label class="field-label">E-posta</label>
+        <div class="field-static" id="profile-email">—</div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Ad Soyad</label>
+        <input
+          id="profile-name-input"
+          class="field-input"
+          type="text"
+          placeholder="Adınızı girin"
+          maxlength="100"
+        />
+      </div>
+
+      <div id="profile-error" style="display:none"></div>
+      <div id="profile-success" style="display:none"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" id="modal-cancel">İptal</button>
+      <button class="btn-primary" id="profile-save">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

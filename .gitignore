@@ -1,0 +1,13 @@
+# Hassas bilgiler
+.env
+
+# Node modules
+node_modules/
+backend/node_modules/
+
+# Log dosyaları
+*.log
+
+# OS dosyaları
+.DS_Store
+Thumbs.db

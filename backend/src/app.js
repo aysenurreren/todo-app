@@ -1,0 +1,26 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import authRouter from "./routes/auth.js";
+import tasksRouter from "./routes/tasks.js";
+import profileRouter from "./routes/profile.js";
+
+const app = express();
+
+// ── Middleware'ler ─────────────────────────────────────────────
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+
+// ── Route'lar ──────────────────────────────────────────────────
+app.use("/api/auth", authRouter);
+app.use("/api/tasks", tasksRouter);
+app.use("/api/profile", profileRouter);
+
+// ── Sunucu ────────────────────────────────────────────────────
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Sunucu ${PORT} portunda çalışıyor`);
+});
+
+export default app;
