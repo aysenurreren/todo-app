@@ -16,6 +16,11 @@ export const schemas = {
     is_completed: Joi.boolean(),
   }).min(1),
   // .min(1) → en az bir alan gönderilmeli
+
+  login: Joi.object({
+    email:    Joi.string().email().required(),
+    password: Joi.string().min(1).required(),
+  }),
 };
 
 // ── Middleware Factory ─────────────────────────────────────────
