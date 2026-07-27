@@ -18,6 +18,11 @@ CREATE TABLE IF NOT EXISTS tasks (
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
+-- Email doğrulama sütunları
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code    VARCHAR(6);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_expires TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified          BOOLEAN NOT NULL DEFAULT FALSE;
+
 -- ── B-Tree Index ───────────────────────────────────────────────
 -- full_name sütunu (sonradan eklendi)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(100);
