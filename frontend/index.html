@@ -12,22 +12,46 @@
 
   <!-- ── AUTH ─────────────────────────────────────── -->
   <div id="auth-screen">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <div class="logo-icon"><i class="ti ti-check"></i></div>
-        <span class="logo-text">Görevlerim</span>
-      </div>
-      <h2 id="auth-title">Giriş yap</h2>
-      <input id="email-input" type="email" placeholder="E-posta" />
-      <input id="password-input" type="password" placeholder="Şifre" />
-      <div id="auth-error"></div>
-      <button id="login-btn">Giriş yap</button>
-      <p class="auth-switch">
-        Hesabın yok mu?
-        <button id="switch-auth">Kayıt ol</button>
-      </p>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon"><i class="ti ti-check"></i></div>
+      <span class="logo-text">Görevlerim</span>
     </div>
+    <h2 id="auth-title">Giriş yap</h2>
+    <input id="email-input" type="email" placeholder="E-posta" />
+    <input id="password-input" type="password" placeholder="Şifre" />
+    <div id="auth-error"></div>
+    <button id="login-btn">Giriş yap</button>
+    <p class="auth-switch">
+      Hesabın yok mu?
+      <button id="switch-auth">Kayıt ol</button>
+    </p>
+  </div>  
+
+  <div class="auth-card" id="verify-screen" style="display:none">
+    <h2 style="font-size:16px; font-weight:500; margin-bottom:4px;">Email Doğrulama</h2>
+    <p style="font-size:12px; color:#64748B; margin-bottom:12px;">
+      Email adresine gönderilen 6 haneli kodu gir.
+    </p>
+    <input 
+      id="verify-code-input" 
+      type="text" 
+      placeholder="000000" 
+      maxlength="6"
+    />
+    <div id="verify-error" style="display:none; color:#DC2626; font-size:12px;"></div>
+    <button id="verify-btn">Doğrula</button>
+    <button id="resend-btn" style="
+      background:none; 
+      border:none; 
+      color:#4F46E5; 
+      font-size:12px; 
+      cursor:pointer;
+      margin-top:4px;
+    ">Tekrar kod gönder</button>
   </div>
+
+</div>  
 
   <!-- ── APP ──────────────────────────────────────── -->
   <div id="app-screen">
