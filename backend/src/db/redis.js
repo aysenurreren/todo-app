@@ -3,9 +3,9 @@ import { createClient } from "redis";
 // ── Redis Client ───────────────────────────────────────────────
 const redisClient = createClient({
   url: process.env.REDIS_URL,
+  password: process.env.REDIS_PASSWORD,
   socket: {
     reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
-    // Bağlantı koparsa: 100ms, 200ms, 300ms... max 3sn bekleyerek tekrar dene
   },
 });
 
