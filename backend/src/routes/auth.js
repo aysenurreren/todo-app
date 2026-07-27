@@ -6,6 +6,7 @@ import { query } from "../db/pool.js";
 import { setTokenActive, revokeToken} from "../db/redis.js";
 import { validate, schemas } from "../middleware/validate.js";
 import { authenticate } from "../middleware/auth.js";
+import { sendVerificationEmail } from "../mailer.js";
 
 const router = Router();
 
@@ -26,6 +27,7 @@ const issueToken = async (user) => {
   return token;
 };
 
+
 // ── POST /register ─────────────────────────────────────────────
 router.post("/register", validate(schemas.register), async (req, res) => {
   try {
@@ -34,23 +36,27 @@ router.post("/register", validate(schemas.register), async (req, res) => {
     // Şifreyi hash'le
     const password_hash = await bcrypt.hash(password, 12);
 
-    // DB'ye kaydet
+    // 6 haneli doğrulama kodu üret
+    const verification_code    = Math.floor(100000 + Math.random() * 900000).toString();
+    const verification_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 dakika
+
+    // DB'ye kaydet — is_verified: false olarak
     const { rows } = await query(
-      `INSERT INTO users (email, password_hash)
-       VALUES ($1, $2)
+      `INSERT INTO users (email, password_hash, verification_code, verification_expires)
+       VALUES ($1, $2, $3, $4)
        RETURNING id, email`,
-      [email, password_hash]
+      [email, password_hash, verification_code, verification_expires]
     );
 
-    const user  = rows[0];
-    const token = await issueToken(user);
+    // Doğrulama emaili gönder
+    await sendVerificationEmail(email, verification_code);
 
     return res.status(201).json({
-      user: { id: user.id, email: user.email },
-      token,
+      message: "Kayıt başarılı. Email adresine doğrulama kodu gönderildi.",
+      userId: rows[0].id,
     });
+
   } catch (err) {
-    // PostgreSQL unique constraint → email zaten kayıtlı
     if (err.code === "23505") {
       return res.status(409).json({ error: "Bu email zaten kayıtlı." });
     }
@@ -60,18 +66,18 @@ router.post("/register", validate(schemas.register), async (req, res) => {
 });
 
 // ── POST /login ────────────────────────────────────────────────
-router.post("/login", validate(schemas.register), async (req, res) => {
+router.post("/login", validate(schemas.login), async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const { rows } = await query(
-      "SELECT id, email, password_hash FROM users WHERE email = $1",
+      "SELECT id, email, password_hash, is_verified FROM users WHERE email = $1",
       [email]
     );
 
     const user = rows[0];
 
-    // Timing attack koruması — kullanıcı olmasa da bcrypt çalışsın
+    // Timing attack koruması
     const dummy   = "$2b$12$invaliddummyhashfortiming000000000000000000";
     const isMatch = await bcrypt.compare(
       password,
@@ -82,14 +88,123 @@ router.post("/login", validate(schemas.register), async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    // Email doğrulanmış mı?
+    if (!user.is_verified) {
+      return res.status(403).json({
+        error: "Email adresiniz doğrulanmamış.",
+        userId: user.id,
+      });
+    }
+
     const token = await issueToken(user);
 
     return res.status(200).json({
       user: { id: user.id, email: user.email },
       token,
     });
+
   } catch (err) {
     console.error("[Login]", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ── POST /verify ───────────────────────────────────────────────
+router.post("/verify", async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+
+    // Kullanıcıyı bul
+    const { rows } = await query(
+      `SELECT id, email, verification_code, verification_expires, is_verified
+       FROM users WHERE id = $1`,
+      [userId]
+    );
+
+    const user = rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    }
+
+    // Zaten doğrulanmış mı?
+    if (user.is_verified) {
+      return res.status(400).json({ error: "Bu hesap zaten doğrulanmış." });
+    }
+
+    // Kod doğru mu?
+    if (user.verification_code !== code) {
+      return res.status(400).json({ error: "Doğrulama kodu yanlış." });
+    }
+
+    // Hesabı doğrula — kodu temizle
+    await query(
+      `UPDATE users
+       SET is_verified = TRUE,
+           verification_code = NULL,
+           verification_expires = NULL
+       WHERE id = $1`,
+      [userId]
+    );
+
+    // Token üret — artık güvenli
+    const token = await issueToken(user);
+
+    return res.status(200).json({
+      user: { id: user.id, email: user.email },
+      token,
+    });
+
+  } catch (err) {
+    console.error("[Verify]", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ── POST /resend-code ──────────────────────────────────────────
+router.post("/resend-code", async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Kullanıcıyı bul
+    const { rows } = await query(
+      "SELECT id, email, is_verified FROM users WHERE id = $1",
+      [userId]
+    );
+
+    const user = rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    }
+
+    // Zaten doğrulanmışsa kod gönderme
+    if (user.is_verified) {
+      return res.status(400).json({ error: "Bu hesap zaten doğrulanmış." });
+    }
+
+    // Yeni kod üret — süre kontrolü YOK
+    const verification_code    = Math.floor(100000 + Math.random() * 900000).toString();
+    const verification_expires = new Date(Date.now() + 10 * 60 * 1000);
+
+    // DB'yi güncelle
+    await query(
+      `UPDATE users
+       SET verification_code = $1,
+           verification_expires = $2
+       WHERE id = $3`,
+      [verification_code, verification_expires, userId]
+    );
+
+    // Yeni kodu gönder
+    await sendVerificationEmail(user.email, verification_code);
+
+    return res.status(200).json({
+      message: "Yeni doğrulama kodu email adresine gönderildi.",
+    });
+
+  } catch (err) {
+    console.error("[Resend Code]", err.message);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
