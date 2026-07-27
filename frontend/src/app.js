@@ -11,6 +11,15 @@ const newTaskInput = document.getElementById("new-task-input");
 const addBtn       = document.getElementById("add-btn");
 const errorBanner  = document.getElementById("error-banner");
 const taskList     = document.getElementById("task-list");
+// ── Doğrulama DOM ──────────────────────────────────────────────
+const verifyScreen    = document.getElementById("verify-screen");
+const verifyCodeInput = document.getElementById("verify-code-input");
+const verifyBtn       = document.getElementById("verify-btn");
+const resendBtn       = document.getElementById("resend-btn");
+const verifyError     = document.getElementById("verify-error");
+
+// Doğrulama için userId sakla
+let pendingUserId = null;
 // ── Pomodoro DOM ───────────────────────────────────────────────
 const pomodoroBanner   = document.getElementById("pomodoro-banner");
 const pomodoroTaskName = document.getElementById("pomodoro-task-name");
@@ -37,6 +46,67 @@ function showError(msg) {
 function hideError() {
   errorBanner.style.display = "none";
 }
+
+// ── Doğrulama Ekranını Göster ──────────────────────────────────
+function showVerifyScreen(userId) {
+  pendingUserId = userId;
+  document.querySelector(".auth-card").style.display = "none";
+  verifyScreen.style.display = "flex";
+  verifyCodeInput.focus();
+}
+
+// ── Doğrulama Ekranını Gizle ───────────────────────────────────
+function hideVerifyScreen() {
+  verifyScreen.style.display  = "none";
+  verifyError.style.display   = "none";
+  verifyCodeInput.value       = "";
+  pendingUserId               = null;
+  document.querySelector(".auth-card").style.display = "flex";
+}
+
+// ── Doğrula Butonu ─────────────────────────────────────────────
+verifyBtn.addEventListener("click", async () => {
+  const code = verifyCodeInput.value.trim();
+  verifyError.style.display = "none";
+
+  if (!code || code.length !== 6) {
+    verifyError.textContent   = "6 haneli kodu eksiksiz gir.";
+    verifyError.style.display = "block";
+    return;
+  }
+
+  try {
+    const data = await client.post("/auth/verify", {
+      userId: pendingUserId,
+      code,
+    });
+
+    localStorage.setItem("token", data.token);
+    hideVerifyScreen();
+    authScreen.style.display = "none";
+    appScreen.style.display  = "flex";
+    fetchTasks();
+  } catch (err) {
+    verifyError.textContent   = err.message;
+    verifyError.style.display = "block";
+  }
+});
+
+// ── Tekrar Kod Gönder ──────────────────────────────────────────
+resendBtn.addEventListener("click", async () => {
+  verifyError.style.display = "none";
+
+  try {
+    await client.post("/auth/resend-code", { userId: pendingUserId });
+    verifyError.textContent   = "Yeni kod gönderildi.";
+    verifyError.style.display = "block";
+    verifyError.style.color   = "#059669";
+  } catch (err) {
+    verifyError.textContent   = err.message;
+    verifyError.style.display = "block";
+    verifyError.style.color   = "#DC2626";
+  }
+});
 
 // ── Auth ───────────────────────────────────────────────────────
 // ── Auth mod geçişi ────────────────────────────────────────────
