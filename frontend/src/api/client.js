@@ -23,9 +23,10 @@ const request = async (method, path, body = null) => {
 
   if (!res.ok) {
     const err = new Error(data.error || "Bir hata oluştu.");
-    err.status = res.status;
+    err.status  = res.status;
+    err.details = data;      // ← tüm response body'yi ekle
     throw err;
-  }
+}
 
   return data;
 };
