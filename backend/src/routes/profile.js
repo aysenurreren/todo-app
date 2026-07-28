@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { query } from "../db/pool.js";
 import { authenticate } from "../middleware/auth.js";
+import logger from "./logger.js";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.get("/", authenticate, async (req, res) => {
 
     return res.status(200).json({ user: rows[0] });
   } catch (err) {
-    console.error("[GET /profile]", err.message);
+    logger.error(`[GET / profile] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -46,7 +47,7 @@ router.put("/", authenticate, async (req, res) => {
 
     return res.status(200).json({ user: rows[0] });
   } catch (err) {
-    console.error("[PUT /profile]", err.message);
+    logger.error(`[PUT /profile] ${err.message}`);;
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });

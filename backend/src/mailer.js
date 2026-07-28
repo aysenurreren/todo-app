@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import logger from "./logger.js";
 
 // ── Gmail SMTP Bağlantısı ──────────────────────────────────────
 
@@ -17,9 +18,9 @@ const transporter = nodemailer.createTransport({
 
 transporter.verify((err) => {
   if (err) {
-    console.error("[Mailer] Bağlantı hatası:", err.message);
+    logger.error(`[Mailer] Bağlantı hatası: ${err.message}`);
   } else {
-    console.log("[Mailer] Gmail SMTP bağlantısı hazır");
+    logger.info("[Mailer] Gmail SMTP bağlantısı hazır");
   }
 });
 

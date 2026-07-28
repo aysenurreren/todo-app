@@ -2,6 +2,7 @@ import { authenticate } from "../middleware/auth.js";
 import { validate, schemas } from "../middleware/validate.js";
 import { query } from "../db/pool.js";
 import { Router } from "express";
+import logger from "./logger.js";
 
 const router = Router();
 

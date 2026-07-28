@@ -4,6 +4,7 @@ import helmet from "helmet";
 import authRouter from "./routes/auth.js";
 import tasksRouter from "./routes/tasks.js";
 import profileRouter from "./routes/profile.js";
+import logger from "./logger.js";
 
 const app = express();
 
@@ -20,7 +21,7 @@ app.use("/api/profile", profileRouter);
 // ── Sunucu ────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`Sunucu ${PORT} portunda çalışıyor`);
+  logger.info(`Sunucu ${PORT} portunda çalışıyor`);
 });
 
 export default app;

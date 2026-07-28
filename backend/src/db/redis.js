@@ -1,4 +1,5 @@
 import { createClient } from "redis";
+import logger from "./logger.js";
 
 // ── Redis Client ───────────────────────────────────────────────
 const redisClient = createClient({
@@ -10,11 +11,11 @@ const redisClient = createClient({
 });
 
 redisClient.on("error", (err) =>
-  console.error("[Redis] Hata:", err.message)
+  logger.error(`[Redis] Hata: ${err.message}`)
 );
 
 redisClient.on("connect", () =>
-  console.log("[Redis] Bağlandı")
+  logger.info("[Redis] Bağlandı")
 );
 
 await redisClient.connect();

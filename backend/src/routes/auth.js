@@ -7,6 +7,7 @@ import { setTokenActive, revokeToken} from "../db/redis.js";
 import { validate, schemas } from "../middleware/validate.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendVerificationEmail } from "../mailer.js";
+import logger from "./logger.js";
 
 const router = Router();
 
@@ -60,7 +61,7 @@ router.post("/register", validate(schemas.register), async (req, res) => {
     if (err.code === "23505") {
       return res.status(409).json({ error: "Bu email zaten kayıtlı." });
     }
-    console.error("[Register]", err.message);
+    logger.error(`[Register] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -104,7 +105,7 @@ router.post("/login", validate(schemas.login), async (req, res) => {
     });
 
   } catch (err) {
-    console.error("[Login]", err.message);
+    logger.error(`[Login] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -156,7 +157,7 @@ router.post("/verify", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("[Verify]", err.message);
+    logger.error(`[Verify] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -204,7 +205,7 @@ router.post("/resend-code", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("[Resend Code]", err.message);
+    logger.error(`[Resend Code] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -215,7 +216,7 @@ router.post("/logout", authenticate, async (req, res) => {
     await revokeToken(req.user.jti);
     return res.status(200).json({ message: "Çıkış yapıldı." });
   } catch (err) {
-    console.error("[Logout]", err.message);
+    logger.error(`[Logout] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
