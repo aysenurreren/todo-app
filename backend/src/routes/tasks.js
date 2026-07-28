@@ -3,6 +3,7 @@ import { validate, schemas } from "../middleware/validate.js";
 import { query } from "../db/pool.js";
 import { Router } from "express";
 import logger from "../logger.js";
+import { validate, schemas, sanitizeTask, checkSanitization } from "../middleware/validate.js";
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.get("/", authenticate, async (req, res) => {
 });
 
 // Görev ekle
-router.post("/", authenticate, validate(schemas.createTask), async (req, res) => {
+router.post("/", authenticate,sanitizeTask,checkSanitization, validate(schemas.createTask), async (req, res) => {
   try {
     const { title } = req.body;
     const { rows } = await query(
@@ -34,7 +35,7 @@ router.post("/", authenticate, validate(schemas.createTask), async (req, res) =>
 });
 
 // Görev güncelle
-router.put("/:id", authenticate, validate(schemas.updateTask), async (req, res) => {
+router.put("/:id", authenticate,sanitizeTask,checkSanitization, validate(schemas.updateTask), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, is_completed } = req.body;

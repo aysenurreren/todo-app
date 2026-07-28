@@ -8,6 +8,7 @@ import { validate, schemas } from "../middleware/validate.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendVerificationEmail } from "../mailer.js";
 import logger from "../logger.js";
+import { validate, schemas, sanitizeRegister, checkSanitization } from "../middleware/validate.js";
 
 const router = Router();
 
@@ -30,7 +31,7 @@ const issueToken = async (user) => {
 
 
 // ── POST /register ─────────────────────────────────────────────
-router.post("/register", validate(schemas.register), async (req, res) => {
+router.post("/register",sanitizeRegister,checkSanitization, validate(schemas.register), async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -67,7 +68,7 @@ router.post("/register", validate(schemas.register), async (req, res) => {
 });
 
 // ── POST /login ────────────────────────────────────────────────
-router.post("/login", validate(schemas.login), async (req, res) => {
+router.post("/login",sanitizeRegister, checkSanitization, validate(schemas.login), async (req, res) => {
   try {
     const { email, password } = req.body;
 

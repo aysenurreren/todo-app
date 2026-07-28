@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { isTokenActive } from "../db/redis.js";
+import { validate, schemas, sanitizeRegister, checkSanitization } from "../middleware/validate.js";
 
 export const authenticate = async (req, res, next) => {
   try {

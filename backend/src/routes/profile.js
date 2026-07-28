@@ -2,6 +2,7 @@ import { Router } from "express";
 import { query } from "../db/pool.js";
 import { authenticate } from "../middleware/auth.js";
 import logger from "../logger.js";
+import { sanitizeProfile, checkSanitization } from "../middleware/validate.js";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get("/", authenticate, async (req, res) => {
 });
 
 // ── PUT /api/profile ───────────────────────────────────────────
-router.put("/", authenticate, async (req, res) => {
+router.put("/", authenticate,sanitizeProfile,checkSanitization,async (req, res) => {
   try {
     const { full_name } = req.body;
 
