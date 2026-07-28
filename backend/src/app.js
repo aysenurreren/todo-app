@@ -13,6 +13,13 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
+
+// ── Request Logger ─────────────────────────────────────────────
+app.use((req, _res, next) => {
+  logger.info(`${req.method} ${req.path}`);
+  next();
+});
+
 // ── Route'lar ──────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
 app.use("/api/tasks", tasksRouter);
