@@ -138,11 +138,23 @@ loginBtn.addEventListener("click", async () => {
   try {
     const endpoint = isRegister ? "/auth/register" : "/auth/login";
     const data = await client.post(endpoint, { email, password });
-    localStorage.setItem("token", data.token);
-    authScreen.style.display = "none";
-    appScreen.style.display  = "flex";
-    fetchTasks();
+
+    if (isRegister) {
+      // Kayıt oldu → doğrulama ekranını göster
+      showVerifyScreen(data.userId);
+    } else {
+      // Giriş yaptı → dashboard'a geç
+      localStorage.setItem("token", data.token);
+      authScreen.style.display = "none";
+      appScreen.style.display  = "flex";
+      fetchTasks();
+    }
   } catch (err) {
+    // 403 → email doğrulanmamış, doğrulama ekranını göster
+    if (err.status === 403) {
+      showVerifyScreen(err.details?.userId || null);
+      return;
+    }
     authError.textContent   = err.message;
     authError.style.display = "block";
   }
