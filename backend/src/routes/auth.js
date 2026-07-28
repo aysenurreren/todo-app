@@ -7,7 +7,7 @@ import { setTokenActive, revokeToken} from "../db/redis.js";
 import { validate, schemas } from "../middleware/validate.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendVerificationEmail } from "../mailer.js";
-import logger from "./logger.js";
+import logger from "../logger.js";
 
 const router = Router();
 
