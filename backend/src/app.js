@@ -9,7 +9,30 @@ import logger from "./logger.js";
 const app = express();
 
 // ── Middleware'ler ─────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  // X-Frame-Options: SAMEORIGIN
+  // Siten başka bir sitede iframe içinde açılamasın
+  frameguard: { action: "sameorigin" },
+
+  // X-Content-Type-Options: nosniff
+  // Tarayıcı dosya tipini tahmin etmesin, header'a güvensin
+  noSniff: true,
+
+  // X-XSS-Protection: 1; mode=block
+  // Eski tarayıcılarda XSS koruması
+  xssFilter: true,
+
+  // Referrer-Policy
+  // Başka siteye gidince URL bilgisi gönderilmesin
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+
+  // HSTS — HTTPS olmadan açma
+  hsts: false,
+
+  // Content-Security-Policy — şimdilik kapalı
+  // Frontend ayrı servis olduğu için karmaşıklaşır
+  contentSecurityPolicy: false,
+}));
 app.use(cors());
 app.use(express.json());
 
