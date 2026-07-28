@@ -67,9 +67,10 @@ router.post("/register",sanitizeRegister,checkSanitization, validate(schemas.reg
 });
 
 // ── POST /login ────────────────────────────────────────────────
-router.post("/login",sanitizeRegister, checkSanitization, validate(schemas.login), async (req, res) => {
+router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.login), async (req, res) => {
   try {
     const { email, password } = req.body;
+    logger.info(`[Login] Gelen email: ${email}`); 
 
     const { rows } = await query(
       "SELECT id, email, password_hash, is_verified FROM users WHERE email = $1",
