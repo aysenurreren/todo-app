@@ -1,4 +1,5 @@
 import Joi from "joi";
+import { body, validationResult } from "express-validator";
 
 // ── Şemalar ────────────────────────────────────────────────────
 export const schemas = {
@@ -38,5 +39,43 @@ export const validate = (schema) => (req, res, next) => {
   }
 
   req.body = value; // temizlenmiş veriyi geri yaz
+  next();
+};
+
+// ── Sanitization Kuralları ─────────────────────────────────────
+
+export const sanitizeRegister = [
+  body("email")
+    .trim()                    // baştaki sondaki boşlukları sil
+    .normalizeEmail()          // büyük harfi küçüğe çevir, noktaları normalize et
+    .escape(),                 // HTML karakterlerini etkisizleştir
+
+  body("password")
+    .trim(),                   // boşlukları temizle
+];
+
+export const sanitizeTask = [
+  body("title")
+    .trim()                    // boşlukları temizle
+    .escape()                  // <script> gibi tehlikeli karakterleri etkisizleştir
+    .stripLow(),               // kontrol karakterlerini sil (null byte vs.)
+];
+
+export const sanitizeProfile = [
+  body("full_name")
+    .trim()
+    .escape()
+    .stripLow(),
+];
+
+// ── Sanitization Sonuç Kontrolü ────────────────────────────────
+export const checkSanitization = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      error: "Bad Request",
+      details: errors.array().map(e => e.msg),
+    });
+  }
   next();
 };
