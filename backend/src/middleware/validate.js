@@ -47,7 +47,7 @@ export const validate = (schema) => (req, res, next) => {
 export const sanitizeRegister = [
   body("email")
     .trim()                    // baştaki sondaki boşlukları sil
-    .normalizeEmail()          // büyük harfi küçüğe çevir, noktaları normalize et
+    .toLowerCase()
     .escape(),                 // HTML karakterlerini etkisizleştir
 
   body("password")
