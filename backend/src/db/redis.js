@@ -34,4 +34,25 @@ export const isTokenActive = (jti) =>
 export const revokeToken = (jti) =>
   redisClient.del(`token:${jti}`);
 
+// ── Login Deneme Sayacı ────────────────────────────────────────
+
+// Başarısız denemeyi kaydet
+export const incrementLoginAttempts = async (email) => {
+  const key = `login_attempts:${email}`;
+  const attempts = await redisClient.incr(key);
+  // İlk denemeyse TTL ayarla (15 dakika)
+  if (attempts === 1) {
+    await redisClient.expire(key, 15 * 60);
+  }
+  return attempts;
+};
+
+// Kaç deneme yapıldığını getir
+export const getLoginAttempts = (email) =>
+  redisClient.get(`login_attempts:${email}`);
+
+// Başarılı girişte sayacı sıfırla
+export const resetLoginAttempts = (email) =>
+  redisClient.del(`login_attempts:${email}`);
+
 export default redisClient;
