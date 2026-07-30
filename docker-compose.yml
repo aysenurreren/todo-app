@@ -29,6 +29,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GMAIL_USER=${GMAIL_USER}     
       - GMAIL_PASS=${GMAIL_PASS} 
+      - FRONTEND_URL=${FRONTEND_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,6 +48,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GMAIL_USER=${GMAIL_USER}     
       - GMAIL_PASS=${GMAIL_PASS} 
+      - FRONTEND_URL=${FRONTEND_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,6 +67,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GMAIL_USER=${GMAIL_USER}     
       - GMAIL_PASS=${GMAIL_PASS} 
+      - FRONTEND_URL=${FRONTEND_URL}
     depends_on:
       postgres:
         condition: service_healthy

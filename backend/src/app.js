@@ -33,7 +33,12 @@ app.use(helmet({
   // Frontend ayrı servis olduğu için karmaşıklaşır
   contentSecurityPolicy: false,
 }));
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
 app.use(express.json());
 
 
