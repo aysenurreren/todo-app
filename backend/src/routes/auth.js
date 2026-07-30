@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { query } from "../db/pool.js";
-import { setTokenActive, revokeToken} from "../db/redis.js";
+import { setTokenActive, revokeToken, incrementLoginAttempts, getLoginAttempts, resetLoginAttempts } from "../db/redis.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendVerificationEmail } from "../mailer.js";
 import logger from "../logger.js";
