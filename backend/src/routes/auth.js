@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { query } from "../db/pool.js";
 import { setTokenActive, revokeToken, incrementLoginAttempts, getLoginAttempts, resetLoginAttempts } from "../db/redis.js";
 import { authenticate } from "../middleware/auth.js";
-import { sendVerificationEmail } from "../mailer.js";
+import { sendVerificationEmail, sendLoginAlertEmail } from "../mailer.js";
 import logger from "../logger.js";
 import { validate, schemas, sanitizeRegister, checkSanitization } from "../middleware/validate.js";
 
@@ -93,6 +93,12 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
       await incrementLoginAttempts(email);
       const newAttempts = await getLoginAttempts(email);
       const remaining = 5 - parseInt(newAttempts);
+
+      // 5. denemede uyarı maili gönder
+      if (parseInt(newAttempts) === 5 && user) {
+        await sendLoginAlertEmail(email);
+        logger.warn(`[Login] Şüpheli giriş uyarısı gönderildi: ${email}`);
+  }
 
       return res.status(401).json({
         error: "Unauthorized",
