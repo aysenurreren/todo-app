@@ -66,6 +66,14 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
   try {
     const { email, password } = req.body;
 
+    // ── Email bazlı rate limit kontrolü ───────────────────────
+    const attempts = await getLoginAttempts(email);
+    if (attempts && parseInt(attempts) >= 5) {
+      return res.status(429).json({
+        error: "Çok fazla başarısız deneme. 15 dakika sonra tekrar dene.",
+      });
+    }
+
     const { rows } = await query(
       "SELECT id, email, password_hash, is_verified FROM users WHERE email = $1",
       [email]
@@ -74,22 +82,34 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
     const user = rows[0];
 
     // Timing attack koruması
-    const dummy = "$2b$12$invaliddummyhashfortiming000000000000000000";
+    const dummy   = "$2b$12$invaliddummyhashfortiming000000000000000000";
     const isMatch = await bcrypt.compare(
       password,
       user ? user.password_hash : dummy
     );
 
     if (!user || !isMatch) {
-      return res.status(401).json({ error: "Unauthorized" });
+      // ── Başarısız deneme → sayacı artır ───────────────────
+      await incrementLoginAttempts(email);
+      const newAttempts = await getLoginAttempts(email);
+      const remaining = 5 - parseInt(newAttempts);
+
+      return res.status(401).json({
+        error: "Unauthorized",
+        remaining: remaining > 0 ? remaining : 0,
+      });
     }
 
+    // Email doğrulanmış mı?
     if (!user.is_verified) {
       return res.status(403).json({
         error: "Email adresiniz doğrulanmamış.",
         userId: user.id,
       });
     }
+
+    // ── Başarılı giriş → sayacı sıfırla ───────────────────────
+    await resetLoginAttempts(email);
 
     const token = await issueToken(user);
 
@@ -99,7 +119,7 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
     });
 
   } catch (err) {
-    logger.error(`[Login] ${err.message}`);
+    console.error("[Login]", err.message);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
