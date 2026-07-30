@@ -54,4 +54,35 @@ export const sendVerificationEmail = async (email, code) => {
   });
 };
 
+// ── Şüpheli Giriş Uyarı Maili ─────────────────────────────────
+export const sendLoginAlertEmail = async (email) => {
+  await transporter.sendMail({
+    from: `"Görevlerim" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "Hesabınıza Şüpheli Giriş Denemesi",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
+        <h2 style="color: #DC2626;">⚠️ Güvenlik Uyarısı</h2>
+        <p>Hesabınıza art arda <strong>5 başarısız giriş denemesi</strong> yapıldı.</p>
+        <div style="
+          background: #FEF2F2;
+          border: 1px solid #FECACA;
+          border-radius: 8px;
+          padding: 16px;
+          margin: 20px 0;
+        ">
+          <p style="color: #991B1B; margin: 0;">
+            Eğer bu girişimleri siz yapmadıysanız hesabınız tehlikede olabilir.
+            Lütfen şifrenizi hemen değiştirin.
+          </p>
+        </div>
+        <p style="color: #64748B; font-size: 13px;">
+          Hesabınız 15 dakika süreyle kilitlenmiştir.<br/>
+          Bu girişimleri siz yaptıysanız bu emaili görmezden gelebilirsiniz.
+        </p>
+      </div>
+    `,
+  });
+};
+
 export default transporter;
