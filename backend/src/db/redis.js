@@ -55,4 +55,24 @@ export const getLoginAttempts = (email) =>
 export const resetLoginAttempts = (email) =>
   redisClient.del(`login_attempts:${email}`);
 
+// ── Task Cache ─────────────────────────────────────────────────
+
+// Görevleri cache'e kaydet (5 dakika TTL)
+export const cacheUserTasks = (userId, tasks) =>
+  redisClient.setEx(
+    `tasks:${userId}`,
+    5 * 60,
+    JSON.stringify(tasks)
+  );
+
+// Cache'den görevleri getir
+export const getCachedTasks = async (userId) => {
+  const data = await redisClient.get(`tasks:${userId}`);
+  return data ? JSON.parse(data) : null;
+};
+
+// Cache'i temizle (veri değişince)
+export const invalidateTaskCache = (userId) =>
+  redisClient.del(`tasks:${userId}`);
+
 export default redisClient;
