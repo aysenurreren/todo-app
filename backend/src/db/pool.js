@@ -1,7 +1,8 @@
 import pg from "pg";
+import { dbCircuitBreaker } from "../circuitBreaker.js";
+
 const { Pool } = pg;
 
-// ── Bağlantı Havuzu ────────────────────────────────────────────
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   min: 2,
@@ -10,15 +11,19 @@ const pool = new Pool({
   connectionTimeoutMillis: 5_000,
 });
 
-// Havuz hatalarını yakala — process çökmesini önler
 pool.on("error", (err) => {
   console.error("[DB Pool] Beklenmeyen hata:", err.message);
 });
 
-// ── Dışarıya Açılan Fonksiyonlar ───────────────────────────────
+pool.on("connect", () => {
+  console.log(`[DB Pool] Yeni bağlantı (instance: ${process.env.INSTANCE_ID})`);
+});
 
-// Tek seferlik sorgu: havuzdan al → çalıştır → geri bırak
-export const query = (text, params) => pool.query(text, params);
+// Circuit Breaker ile sarmalanmış query
+export const query = (text, params) =>
+  dbCircuitBreaker.execute(() => pool.query(text, params));
 
-// Transaction için: bağlantıyı sen yönet, bitince release() çağır
-export const getClient = () => pool.connect();
+export const getClient = () =>
+  dbCircuitBreaker.execute(() => pool.connect());
+
+export default pool;
