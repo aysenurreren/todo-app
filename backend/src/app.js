@@ -7,6 +7,7 @@ import profileRouter from "./routes/profile.js";
 import logger from "./logger.js";
 import pool, { query } from "./db/pool.js";
 import redisClient from "./db/redis.js";
+import { dbCircuitBreaker, redisCircuitBreaker } from "./circuitBreaker.js";
 
 const app = express();
 
@@ -70,6 +71,10 @@ app.get("/api/health", async (req, res) => {
     services: {
       database: "unknown",
       redis: "unknown",
+    },
+    circuitBreakers: {
+      database: dbCircuitBreaker.getState(),
+      redis:    redisCircuitBreaker.getState(),
     },
   };
 
