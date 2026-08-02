@@ -26,6 +26,11 @@
       Hesabın yok mu?
       <button id="switch-auth">Kayıt ol</button>
     </p>
+    <p class="auth-switch">
+      <button id="forgot-password-btn" style="background:none; border:none; color:#64748B; font-size:12px; cursor:pointer;">
+        Şifremi unuttum
+      </button>
+    </p>
   </div>  
 
   <div class="auth-card" id="verify-screen" style="display:none">
@@ -50,6 +55,43 @@
       margin-top:4px;
     ">Tekrar kod gönder</button>
   </div>
+  <!-- Şifre Sıfırlama Ekranı -->
+<div class="auth-card" id="forgot-screen" style="display:none">
+  <h2 style="font-size:16px; font-weight:500; margin-bottom:4px;">Şifremi Unuttum</h2>
+  <p style="font-size:12px; color:#64748B; margin-bottom:12px;">
+    Email adresini gir, sıfırlama linki gönderelim.
+  </p>
+  <input
+    id="forgot-email-input"
+    type="email"
+    placeholder="E-posta"
+  />
+  <div id="forgot-error" style="display:none; font-size:12px;"></div>
+  <button id="forgot-submit-btn">Gönder</button>
+  <button id="forgot-back-btn" style="
+    background:none;
+    border:none;
+    color:#4F46E5;
+    font-size:12px;
+    cursor:pointer;
+    margin-top:4px;
+  ">Geri dön</button>
+</div>
+
+<!-- Şifre Sıfırlama Form Ekranı -->
+<div class="auth-card" id="reset-screen" style="display:none">
+  <h2 style="font-size:16px; font-weight:500; margin-bottom:4px;">Yeni Şifre</h2>
+  <p style="font-size:12px; color:#64748B; margin-bottom:12px;">
+    Yeni şifrenizi girin.
+  </p>
+  <input
+    id="reset-password-input"
+    type="password"
+    placeholder="Yeni şifre (en az 8 karakter)"
+  />
+  <div id="reset-error" style="display:none; font-size:12px;"></div>
+  <button id="reset-submit-btn">Şifremi Sıfırla</button>
+</div>
 
 </div>  
 

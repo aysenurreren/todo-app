@@ -85,4 +85,35 @@ export const sendLoginAlertEmail = async (email) => {
   });
 };
 
+// ── Şifre Sıfırlama Maili ──────────────────────────────────────
+export const sendPasswordResetEmail = async (email, token) => {
+  const resetUrl = `http://localhost/reset-password?token=${token}`;
+
+  await transporter.sendMail({
+    from: `"Görevlerim" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "Şifre Sıfırlama Talebi",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
+        <h2 style="color: #4F46E5;">Şifre Sıfırlama</h2>
+        <p>Şifrenizi sıfırlamak için aşağıdaki butona tıklayın:</p>
+        <a href="${resetUrl}" style="
+          display: inline-block;
+          background: #4F46E5;
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
+          text-decoration: none;
+          margin: 20px 0;
+          font-weight: bold;
+        ">Şifremi Sıfırla</a>
+        <p style="color: #64748B; font-size: 13px;">
+          Bu link 1 saat geçerlidir.<br/>
+          Eğer bu talebi siz yapmadıysanız bu emaili görmezden gelebilirsiniz.
+        </p>
+      </div>
+    `,
+  });
+};
+
 export default transporter;

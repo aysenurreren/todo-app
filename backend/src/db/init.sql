@@ -30,3 +30,6 @@ CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
 -- Performans: user_id + created_at composite index
 CREATE INDEX IF NOT EXISTS idx_tasks_user_created
 ON tasks(user_id, created_at DESC);
+-- Şifre sıfırlama sütunları
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token       VARCHAR(64);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;

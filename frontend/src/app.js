@@ -11,6 +11,21 @@ const newTaskInput = document.getElementById("new-task-input");
 const addBtn       = document.getElementById("add-btn");
 const errorBanner  = document.getElementById("error-banner");
 const taskList     = document.getElementById("task-list");
+
+
+// ── Şifre Sıfırlama DOM ────────────────────────────────────────
+const forgotScreen      = document.getElementById("forgot-screen");
+const forgotEmailInput  = document.getElementById("forgot-email-input");
+const forgotSubmitBtn   = document.getElementById("forgot-submit-btn");
+const forgotBackBtn     = document.getElementById("forgot-back-btn");
+const forgotError       = document.getElementById("forgot-error");
+const forgotBtn         = document.getElementById("forgot-password-btn");
+const resetScreen       = document.getElementById("reset-screen");
+const resetPasswordInput = document.getElementById("reset-password-input");
+const resetSubmitBtn    = document.getElementById("reset-submit-btn");
+const resetError        = document.getElementById("reset-error");
+
+
 // ── Doğrulama DOM ──────────────────────────────────────────────
 const verifyScreen    = document.getElementById("verify-screen");
 const verifyCodeInput = document.getElementById("verify-code-input");
@@ -63,6 +78,103 @@ function hideVerifyScreen() {
   pendingUserId               = null;
   document.querySelector(".auth-card").style.display = "flex";
 }
+
+// ── Şifre Sıfırlama ────────────────────────────────────────────
+
+// Forgot ekranını göster
+function showForgotScreen() {
+  document.querySelector(".auth-card").style.display = "none";
+  forgotScreen.style.display = "flex";
+  forgotEmailInput.focus();
+}
+
+// Forgot ekranını gizle
+function hideForgotScreen() {
+  forgotScreen.style.display    = "none";
+  forgotError.style.display     = "none";
+  forgotEmailInput.value        = "";
+  document.querySelector(".auth-card").style.display = "flex";
+}
+
+// Şifremi unuttum butonu
+forgotBtn.addEventListener("click", showForgotScreen);
+
+// Geri dön butonu
+forgotBackBtn.addEventListener("click", hideForgotScreen);
+
+// Gönder butonu
+forgotSubmitBtn.addEventListener("click", async () => {
+  const email = forgotEmailInput.value.trim();
+  forgotError.style.display = "none";
+
+  if (!email) {
+    forgotError.textContent   = "Email zorunludur.";
+    forgotError.style.display = "block";
+    forgotError.style.color   = "#DC2626";
+    return;
+  }
+
+  try {
+    await client.post("/auth/forgot-password", { email });
+    forgotError.textContent   = "Eğer bu email kayıtlıysa sıfırlama linki gönderildi.";
+    forgotError.style.display = "block";
+    forgotError.style.color   = "#059669";
+    forgotSubmitBtn.disabled  = true;
+  } catch (err) {
+    forgotError.textContent   = err.message;
+    forgotError.style.display = "block";
+    forgotError.style.color   = "#DC2626";
+  }
+});
+
+// ── Reset Password ─────────────────────────────────────────────
+
+// URL'den token'ı oku ve reset ekranını göster
+function checkResetToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get("token");
+
+  if (token) {
+    document.querySelector(".auth-card").style.display = "none";
+    resetScreen.style.display = "flex";
+    resetScreen.dataset.token = token;
+  }
+}
+
+// Şifreyi sıfırla
+resetSubmitBtn.addEventListener("click", async () => {
+  const password = resetPasswordInput.value;
+  const token    = resetScreen.dataset.token;
+  resetError.style.display = "none";
+
+  if (!password || password.length < 8) {
+    resetError.textContent   = "Şifre en az 8 karakter olmalıdır.";
+    resetError.style.display = "block";
+    resetError.style.color   = "#DC2626";
+    return;
+  }
+
+  try {
+    await client.post("/auth/reset-password", { token, password });
+    resetError.textContent   = "Şifreniz sıfırlandı! Giriş yapabilirsiniz.";
+    resetError.style.display = "block";
+    resetError.style.color   = "#059669";
+    resetSubmitBtn.disabled  = true;
+
+    // 2 saniye sonra login ekranına dön
+    setTimeout(() => {
+      resetScreen.style.display = "none";
+      document.querySelector(".auth-card").style.display = "flex";
+      // URL'den token'ı temizle
+      window.history.replaceState({}, "", "/");
+    }, 2000);
+  } catch (err) {
+    resetError.textContent   = err.message;
+    resetError.style.display = "block";
+    resetError.style.color   = "#DC2626";
+  }
+});
+
 
 // ── Doğrula Butonu ─────────────────────────────────────────────
 verifyBtn.addEventListener("click", async () => {
@@ -617,3 +729,6 @@ if (localStorage.getItem("token")) {
   appScreen.style.display  = "flex";
   fetchTasks();
 }
+
+// Sayfa yüklendiğinde reset token kontrolü
+checkResetToken();

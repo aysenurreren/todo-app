@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { query } from "../db/pool.js";
 import { setTokenActive, revokeToken, incrementLoginAttempts, getLoginAttempts, resetLoginAttempts } from "../db/redis.js";
 import { authenticate } from "../middleware/auth.js";
-import { sendVerificationEmail, sendLoginAlertEmail } from "../mailer.js";
+import { sendVerificationEmail, sendLoginAlertEmail, sendPasswordResetEmail } from "../mailer.js";
 import logger from "../logger.js";
 import { validate, schemas, sanitizeRegister, checkSanitization } from "../middleware/validate.js";
 
@@ -241,6 +241,108 @@ router.post("/resend-code", async (req, res) => {
 
   } catch (err) {
     logger.error(`[Resend Code] ${err.message}`);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ── POST /forgot-password ──────────────────────────────────────
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email zorunludur." });
+    }
+
+    const { rows } = await query(
+      "SELECT id, email FROM users WHERE email = $1",
+      [email]
+    );
+
+    // Güvenlik: kullanıcı yoksa da aynı mesajı dön
+    // Email varlığını sızdırma
+    if (!rows[0]) {
+      return res.status(200).json({
+        message: "Eğer bu email kayıtlıysa sıfırlama linki gönderildi.",
+      });
+    }
+
+    // Rastgele token üret (64 karakter)
+    const resetToken   = uuidv4().replace(/-/g, "") + uuidv4().replace(/-/g, "");
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 saat
+
+    // DB'ye kaydet
+    await query(
+      `UPDATE users
+       SET reset_token = $1, reset_token_expires = $2
+       WHERE id = $3`,
+      [resetToken, resetExpires, rows[0].id]
+    );
+
+    // Email gönder
+    await sendPasswordResetEmail(email, resetToken);
+
+    logger.info(`[ForgotPassword] Sıfırlama emaili gönderildi: ${email}`);
+
+    return res.status(200).json({
+      message: "Eğer bu email kayıtlıysa sıfırlama linki gönderildi.",
+    });
+
+  } catch (err) {
+    logger.error(`[ForgotPassword] ${err.message}`);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ── POST /reset-password ───────────────────────────────────────
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ error: "Token ve şifre zorunludur." });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: "Şifre en az 8 karakter olmalıdır." });
+    }
+
+    // Token'ı bul
+    const { rows } = await query(
+      `SELECT id, email FROM users
+       WHERE reset_token = $1
+       AND reset_token_expires > NOW()`,
+      [token]
+    );
+
+    if (!rows[0]) {
+      return res.status(400).json({
+        error: "Geçersiz veya süresi dolmuş token.",
+      });
+    }
+
+    // Yeni şifreyi hash'le
+    const password_hash = await bcrypt.hash(password, 12);
+
+    // Şifreyi güncelle, token'ı temizle
+    await query(
+      `UPDATE users
+       SET password_hash = $1,
+           reset_token = NULL,
+           reset_token_expires = NULL
+       WHERE id = $2`,
+      [password_hash, rows[0].id]
+    );
+
+    // Tüm aktif token'ları Redis'ten sil (güvenlik)
+    logger.info(`[ResetPassword] Şifre sıfırlandı: ${rows[0].email}`);
+
+    return res.status(200).json({
+      message: "Şifreniz başarıyla sıfırlandı. Giriş yapabilirsiniz.",
+    });
+
+  } catch (err) {
+    logger.error(`[ResetPassword] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
