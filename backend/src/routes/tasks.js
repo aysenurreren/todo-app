@@ -11,24 +11,53 @@ const router = Router();
 // Görevleri listele
 router.get("/", authenticate, async (req, res) => {
   try {
-    const cached = await getCachedTasks(req.user.id);
+    // Sayfalama parametreleri
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // Cache anahtarına sayfa bilgisi ekle
+    const cacheKey = `${req.user.id}:page:${page}:limit:${limit}`;
+    const cached = await getCachedTasks(cacheKey);
     if (cached) {
-      logger.info(`[Tasks] Cache hit: ${req.user.id}`);
-      return res.status(200).json({ tasks: cached });
+      logger.info(`[Tasks] Cache hit: ${cacheKey}`);
+      return res.status(200).json(cached);
     }
 
-    const { rows } = await query(
-      `SELECT * FROM tasks 
-       WHERE user_id = $1 
-       AND is_deleted = FALSE    
-       ORDER BY created_at DESC`,
+    // Toplam görev sayısı
+    const { rows: countRows } = await query(
+      `SELECT COUNT(*) FROM tasks 
+       WHERE user_id = $1 AND is_deleted = FALSE`,
       [req.user.id]
     );
+    const total = parseInt(countRows[0].count);
 
-    await cacheUserTasks(req.user.id, rows);
-    logger.info(`[Tasks] Cache miss: ${req.user.id}`);
+    // Görevleri getir
+    const { rows } = await query(
+      `SELECT * FROM tasks
+       WHERE user_id = $1 AND is_deleted = FALSE
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, limit, offset]
+    );
 
-    return res.status(200).json({ tasks: rows });
+    const response = {
+      tasks: rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      },
+    };
+
+    // Cache'e kaydet
+    await cacheUserTasks(cacheKey, response);
+    logger.info(`[Tasks] Cache miss: ${cacheKey}`);
+
+    return res.status(200).json(response);
   } catch (err) {
     logger.error(`[GET /tasks] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });

@@ -836,3 +836,51 @@ body {
   transition: all 120ms;
 }
 .btn-secondary:hover { background: var(--c-bg); color: var(--c-text); }
+
+/* ── Pagination ──────────────────────────────────────────────── */
+#pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 0.5px solid var(--c-border);
+  margin-top: 8px;
+}
+
+#pagination button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border: 0.5px solid var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 120ms;
+  white-space: nowrap;
+  min-width: 100px;
+  justify-content: center;
+}
+
+#pagination button:hover:not(:disabled) {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+
+#pagination button:disabled {
+  opacity: .3;
+  cursor: not-allowed;
+}
+
+#page-info {
+  font-size: 13px;
+  color: var(--c-muted);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: center;
+  font-weight: 500;
+}

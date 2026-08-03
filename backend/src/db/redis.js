@@ -72,7 +72,11 @@ export const getCachedTasks = async (userId) => {
 };
 
 // Cache'i temizle (veri değişince)
-export const invalidateTaskCache = (userId) =>
-  redisClient.del(`tasks:${userId}`);
+export const invalidateTaskCache = async (userId) => {
+  const keys = await redisClient.keys(`tasks:${userId}*`);
+  if (keys.length > 0) {
+    await redisClient.del(keys);
+  }
+};
 
 export default redisClient;

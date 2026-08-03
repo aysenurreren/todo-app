@@ -14,6 +14,14 @@ const taskList     = document.getElementById("task-list");
 const emptyState = document.getElementById("empty-state");
 const emptyText  = document.getElementById("empty-text");
 
+const pagination = document.getElementById("pagination");
+const prevBtn    = document.getElementById("prev-btn");
+const nextBtn    = document.getElementById("next-btn");
+const pageInfo   = document.getElementById("page-info");
+
+let currentPage = 1;
+const PAGE_LIMIT = 20;
+
 
 // ── Şifre Sıfırlama DOM ────────────────────────────────────────
 const forgotScreen      = document.getElementById("forgot-screen");
@@ -285,15 +293,30 @@ logoutBtn.addEventListener("click", async () => {
 });
 
 // ── Görev Yükleme ──────────────────────────────────────────────
-async function fetchTasks() {
+async function fetchTasks(page = 1) {
   try {
-    const data = await client.get("/tasks");
-    globalTasks = data.tasks;
+    const data = await client.get(`/tasks?page=${page}&limit=${PAGE_LIMIT}`);
+    globalTasks  = data.tasks;
+    currentPage  = page;
+
+    // Pagination göster
+    if (data.pagination.totalPages > 1) {
+      pagination.style.display = "flex";
+      pageInfo.textContent     = `${page} / ${data.pagination.totalPages}`;
+      prevBtn.disabled         = !data.pagination.hasPrev;
+      nextBtn.disabled         = !data.pagination.hasNext;
+    } else {
+      pagination.style.display = "none";
+    }
+
     render();
   } catch (err) {
     showError(err.message);
   }
 }
+
+prevBtn.addEventListener("click", () => fetchTasks(currentPage - 1));
+nextBtn.addEventListener("click", () => fetchTasks(currentPage + 1));
 
 // ── Render + Client-Side Filtering ────────────────────────────
 function render() {
