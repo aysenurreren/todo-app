@@ -111,4 +111,49 @@ router.delete("/:id", authenticate, async (req, res) => {
   }
 });
 
+// ── POST /:id/restore ──────────────────────────────────────────
+router.post("/:id/restore", authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { rowCount } = await query(
+      `UPDATE tasks
+       SET is_deleted = FALSE,
+           deleted_at = NULL
+       WHERE id = $1 AND user_id = $2 AND is_deleted = TRUE`,
+      [id, req.user.id]
+    );
+
+    if (rowCount === 0) {
+      return res.status(404).json({ error: "Silinmiş görev bulunamadı." });
+    }
+
+    // Cache'i temizle
+    await invalidateTaskCache(req.user.id);
+
+    return res.status(200).json({ message: "Görev geri alındı." });
+  } catch (err) {
+    logger.error(`[RESTORE /tasks] ${err.message}`);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ── GET /deleted ───────────────────────────────────────────────
+router.get("/deleted", authenticate, async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT * FROM tasks
+       WHERE user_id = $1
+       AND is_deleted = TRUE
+       ORDER BY deleted_at DESC`,
+      [req.user.id]
+    );
+
+    return res.status(200).json({ tasks: rows });
+  } catch (err) {
+    logger.error(`[GET /tasks/deleted] ${err.message}`);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 export default router;
