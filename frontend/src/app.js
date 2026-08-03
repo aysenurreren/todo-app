@@ -11,6 +11,8 @@ const newTaskInput = document.getElementById("new-task-input");
 const addBtn       = document.getElementById("add-btn");
 const errorBanner  = document.getElementById("error-banner");
 const taskList     = document.getElementById("task-list");
+const emptyState = document.getElementById("empty-state");
+const emptyText  = document.getElementById("empty-text");
 
 
 // ── Şifre Sıfırlama DOM ────────────────────────────────────────
@@ -318,6 +320,12 @@ function render() {
       const d = new Date(task.created_at);
       return d.getMonth()    === now.getMonth() &&
              d.getFullYear() === now.getFullYear();
+    }
+
+    // Silinen görevler için ayrı akış
+    if (activeFilter === "DELETED") {
+      renderDeletedTasks();
+      return;
     }
 
     return true; // ALL
@@ -728,6 +736,63 @@ if (localStorage.getItem("token")) {
   authScreen.style.display = "none";
   appScreen.style.display  = "flex";
   fetchTasks();
+}
+
+// ── Silinen Görevleri Çiz ──────────────────────────────────────
+async function renderDeletedTasks() {
+  try {
+    const data = await client.get("/tasks/deleted");
+    const deleted = data.tasks;
+
+    taskList.innerHTML = "";
+
+    if (deleted.length === 0) {
+      emptyState.style.display = "flex";
+      taskList.style.display   = "none";
+      emptyText.textContent    = "Silinmiş görev yok.";
+      return;
+    }
+
+    emptyState.style.display = "none";
+    taskList.style.display   = "flex";
+
+    deleted.forEach(task => {
+      const date = new Date(task.deleted_at).toLocaleDateString("tr-TR", {
+        day: "numeric", month: "short"
+      });
+
+      const item = document.createElement("div");
+      item.className = "task-item is-done";
+
+      item.innerHTML = `
+        <div class="task-body">
+          <div class="task-title" style="text-decoration:line-through; color:var(--c-hint)">
+            ${escHtml(task.title)}
+          </div>
+          <div class="task-date">${date} tarihinde silindi</div>
+        </div>
+        <div class="task-actions" style="opacity:1">
+          <button class="task-btn restore-btn" title="Geri al">
+            <i class="ti ti-arrow-back-up"></i>
+          </button>
+        </div>
+      `;
+
+      item.querySelector(".restore-btn").addEventListener("click", async () => {
+        try {
+          await client.restore(`/tasks/${task.id}/restore`);
+          renderDeletedTasks();
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+
+      taskList.appendChild(item);
+    });
+
+  } catch (err) {
+    showError(err.message);
+  }
 }
 
 // Sayfa yüklendiğinde reset token kontrolü
