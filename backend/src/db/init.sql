@@ -33,3 +33,6 @@ ON tasks(user_id, created_at DESC);
 -- Şifre sıfırlama sütunları
 ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token       VARCHAR(64);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
+-- Soft delete sütunları
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_deleted  BOOLEAN     NOT NULL DEFAULT FALSE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted_at  TIMESTAMPTZ;

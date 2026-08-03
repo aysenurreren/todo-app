@@ -10,20 +10,20 @@ const router = Router();
 // Görevleri listele
 router.get("/", authenticate, async (req, res) => {
   try {
-    // Önce cache'e bak
     const cached = await getCachedTasks(req.user.id);
     if (cached) {
       logger.info(`[Tasks] Cache hit: ${req.user.id}`);
       return res.status(200).json({ tasks: cached });
     }
 
-    // Cache'de yoksa PostgreSQL'e git
     const { rows } = await query(
-      `SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC`,
+      `SELECT * FROM tasks 
+       WHERE user_id = $1 
+       AND is_deleted = FALSE    
+       ORDER BY created_at DESC`,
       [req.user.id]
     );
 
-    // Redis'e kaydet
     await cacheUserTasks(req.user.id, rows);
     logger.info(`[Tasks] Cache miss: ${req.user.id}`);
 
@@ -83,12 +83,17 @@ router.put("/:id", authenticate, sanitizeTask, checkSanitization, validate(schem
 });
 
 // Görev sil
+// ── DELETE /:id ────────────────────────────────────────────────
 router.delete("/:id", authenticate, async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Gerçekten silme — soft delete yap
     const { rowCount } = await query(
-      "DELETE FROM tasks WHERE id = $1 AND user_id = $2",
+      `UPDATE tasks
+       SET is_deleted = TRUE,
+           deleted_at = NOW()
+       WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE`,
       [id, req.user.id]
     );
 
