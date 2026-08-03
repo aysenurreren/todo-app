@@ -8,6 +8,7 @@ import { authenticate } from "../middleware/auth.js";
 import { sendVerificationEmail, sendLoginAlertEmail, sendPasswordResetEmail } from "../mailer.js";
 import logger from "../logger.js";
 import { validate, schemas, sanitizeRegister, checkSanitization } from "../middleware/validate.js";
+import { logAction } from "../audit.js";
 
 const router = Router();
 
@@ -129,6 +130,12 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
       });
     }
 
+    // Audit log
+    await logAction({
+      userId:     user.id,
+      action:     "LOGIN",
+      ipAddress:  req.headers["x-real-ip"] || req.ip,
+  });
     // ── Başarılı giriş → sayacı sıfırla ───────────────────────
     await resetLoginAttempts(email);
 
@@ -347,6 +354,13 @@ router.post("/reset-password", async (req, res) => {
       [password_hash, rows[0].id]
     );
 
+    // Audit log
+    await logAction({
+      userId:    rows[0].id,
+      action:    "PASSWORD_RESET",
+      ipAddress: req.headers["x-real-ip"] || req.ip,
+  });
+
     // Tüm aktif token'ları Redis'ten sil (güvenlik)
     logger.info(`[ResetPassword] Şifre sıfırlandı: ${rows[0].email}`);
 
@@ -403,6 +417,13 @@ router.post("/refresh", async (req, res) => {
 router.post("/logout", authenticate, async (req, res) => {
   try {
     await revokeToken(req.user.jti);
+    // Audit log
+    await logAction({
+      userId:    req.user.id,
+      action:    "LOGOUT",
+      ipAddress: req.headers["x-real-ip"] || req.ip,
+  });
+
     return res.status(200).json({ message: "Çıkış yapıldı." });
   } catch (err) {
     logger.error(`[Logout] ${err.message}`);

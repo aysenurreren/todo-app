@@ -4,6 +4,7 @@ import { Router } from "express";
 import logger from "../logger.js";
 import { validate, schemas, sanitizeTask, checkSanitization } from "../middleware/validate.js";
 import { cacheUserTasks, getCachedTasks, invalidateTaskCache } from "../db/redis.js";
+import { logAction } from "../audit.js";
 
 const router = Router();
 
@@ -46,6 +47,15 @@ router.post("/", authenticate, sanitizeTask, checkSanitization, validate(schemas
     // Cache'i temizle
     await invalidateTaskCache(req.user.id);
 
+    // Audit log
+    await logAction({
+      userId:     req.user.id,
+      action:     "TASK_CREATED",
+      entityType: "task",
+      entityId:   rows[0].id,
+      ipAddress:  req.headers["x-real-ip"] || req.ip,
+  });
+
     return res.status(201).json({ task: rows[0] });
   } catch (err) {
     logger.error(`[POST /tasks] ${err.message}`);
@@ -83,7 +93,6 @@ router.put("/:id", authenticate, sanitizeTask, checkSanitization, validate(schem
 });
 
 // Görev sil
-// ── DELETE /:id ────────────────────────────────────────────────
 router.delete("/:id", authenticate, async (req, res) => {
   try {
     const { id } = req.params;
@@ -103,6 +112,16 @@ router.delete("/:id", authenticate, async (req, res) => {
 
     // Cache'i temizle
     await invalidateTaskCache(req.user.id);
+
+    // Audit log
+    await logAction({
+      userId:     req.user.id,
+      action:     "TASK_DELETED",
+      entityType: "task",
+      entityId:   id,
+      ipAddress:  req.headers["x-real-ip"] || req.ip,
+  });
+
 
     return res.status(204).send();
   } catch (err) {
@@ -130,6 +149,16 @@ router.post("/:id/restore", authenticate, async (req, res) => {
 
     // Cache'i temizle
     await invalidateTaskCache(req.user.id);
+
+    // Audit log
+    await logAction({
+      userId:     req.user.id,
+      action:     "TASK_RESTORED",
+      entityType: "task",
+      entityId:   id,
+      ipAddress:  req.headers["x-real-ip"] || req.ip,
+  });
+
 
     return res.status(200).json({ message: "Görev geri alındı." });
   } catch (err) {

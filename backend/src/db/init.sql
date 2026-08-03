@@ -18,6 +18,20 @@ CREATE TABLE IF NOT EXISTS tasks (
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
+-- Audit Log tablosu
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID        REFERENCES users(id) ON DELETE SET NULL,
+    action      VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50),
+    entity_id   UUID,
+    ip_address  VARCHAR(45),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at DESC);
+
 -- Email doğrulama sütunları
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code    VARCHAR(6);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_expires TIMESTAMPTZ;
