@@ -12,20 +12,35 @@ import { validate, schemas, sanitizeRegister, checkSanitization } from "../middl
 const router = Router();
 
 // ── Yardımcı: JWT üret ve Redis'e kaydet ──────────────────────
-const issueToken = async (user) => {
-  const jti = uuidv4();
-  const expiresIn = "7d";
+const issueToken = async (user, res) => {
+  const jti       = uuidv4();
+  const expiresIn = "15m"; // Access Token → 15 dakika
 
-  const token = jwt.sign(
+  const accessToken = jwt.sign(
     { sub: user.id, email: user.email, jti },
     process.env.JWT_SECRET,
     { expiresIn }
   );
 
-  // 7 gün = 604800 saniye
-  await setTokenActive(jti, user.id, 604800);
+  // 15 dakika = 900 saniye
+  await setTokenActive(jti, user.id, 900);
 
-  return token;
+  // Refresh Token → ayrı secret ile imzala
+  const refreshToken = jwt.sign(
+    { sub: user.id },
+    process.env.REFRESH_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  // Refresh Token → HttpOnly Cookie
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,     // JavaScript erişemez
+    secure: false,      // HTTPS olmadığı için false (production'da true)
+    sameSite: "strict", // CSRF koruması
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 gün
+  });
+
+  return accessToken;
 };
 
 
@@ -117,12 +132,11 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
     // ── Başarılı giriş → sayacı sıfırla ───────────────────────
     await resetLoginAttempts(email);
 
-    const token = await issueToken(user);
-
+    const accessToken = await issueToken(user, res);
     return res.status(200).json({
       user: { id: user.id, email: user.email },
-      token,
-    });
+      token: accessToken,
+});
 
   } catch (err) {
     console.error("[Login]", err.message);
@@ -174,12 +188,11 @@ router.post("/verify", async (req, res) => {
       [userId]
     );
 
-    const token = await issueToken(user);
-
+    const accessToken = await issueToken(user, res);
     return res.status(200).json({
       user: { id: user.id, email: user.email },
-      token,
-    });
+      token: accessToken,
+});
 
   } catch (err) {
     logger.error(`[Verify] ${err.message}`);
@@ -343,6 +356,45 @@ router.post("/reset-password", async (req, res) => {
 
   } catch (err) {
     logger.error(`[ResetPassword] ${err.message}`);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ── POST /refresh ──────────────────────────────────────────────
+router.post("/refresh", async (req, res) => {
+  try {
+    // Cookie'den refresh token al
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ error: "Refresh token bulunamadı." });
+    }
+
+    // Refresh token'ı doğrula
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Geçersiz refresh token." });
+    }
+
+    // Kullanıcıyı bul
+    const { rows } = await query(
+      "SELECT id, email FROM users WHERE id = $1",
+      [payload.sub]
+    );
+
+    if (!rows[0]) {
+      return res.status(401).json({ error: "Kullanıcı bulunamadı." });
+    }
+
+    // Yeni access token üret
+    const accessToken = await issueToken(rows[0], res);
+
+    return res.status(200).json({ token: accessToken });
+
+  } catch (err) {
+    logger.error(`[Refresh] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });

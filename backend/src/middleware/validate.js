@@ -56,9 +56,15 @@ export const sanitizeRegister = [
 
 export const sanitizeTask = [
   body("title")
-    .trim()                    // boşlukları temizle
-    .escape()                  // <script> gibi tehlikeli karakterleri etkisizleştir
-    .stripLow(),               // kontrol karakterlerini sil (null byte vs.)
+    .optional()
+    .trim()
+    .escape()
+    .stripLow(),
+
+  body("is_completed")
+    .optional()
+    .isBoolean()
+    .toBoolean(),
 ];
 
 export const sanitizeProfile = [

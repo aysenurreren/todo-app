@@ -8,6 +8,7 @@ import logger from "./logger.js";
 import pool, { query } from "./db/pool.js";
 import redisClient from "./db/redis.js";
 import { dbCircuitBreaker, redisCircuitBreaker } from "./circuitBreaker.js";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use(helmet({
   // Frontend ayrı servis olduğu için karmaşıklaşır
   contentSecurityPolicy: false,
 }));
+app.use(cookieParser());
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
