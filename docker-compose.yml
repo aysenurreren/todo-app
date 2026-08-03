@@ -30,6 +30,7 @@ services:
       - GMAIL_USER=${GMAIL_USER}     
       - GMAIL_PASS=${GMAIL_PASS} 
       - FRONTEND_URL=${FRONTEND_URL}
+      - REFRESH_SECRET=${REFRESH_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,6 +50,7 @@ services:
       - GMAIL_USER=${GMAIL_USER}     
       - GMAIL_PASS=${GMAIL_PASS} 
       - FRONTEND_URL=${FRONTEND_URL}
+      - REFRESH_SECRET=${REFRESH_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,6 +70,7 @@ services:
       - GMAIL_USER=${GMAIL_USER}     
       - GMAIL_PASS=${GMAIL_PASS} 
       - FRONTEND_URL=${FRONTEND_URL}
+      - REFRESH_SECRET=${REFRESH_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
