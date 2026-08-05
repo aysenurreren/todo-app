@@ -31,6 +31,7 @@ services:
       - GMAIL_PASS=${GMAIL_PASS} 
       - FRONTEND_URL=${FRONTEND_URL}
       - REFRESH_SECRET=${REFRESH_SECRET}
+      - LOG_SERVICE_URL=http://log-service:5001
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,6 +52,7 @@ services:
       - GMAIL_PASS=${GMAIL_PASS} 
       - FRONTEND_URL=${FRONTEND_URL}
       - REFRESH_SECRET=${REFRESH_SECRET}
+      - LOG_SERVICE_URL=http://log-service:5001
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,6 +73,7 @@ services:
       - GMAIL_PASS=${GMAIL_PASS} 
       - FRONTEND_URL=${FRONTEND_URL}
       - REFRESH_SECRET=${REFRESH_SECRET}
+      - LOG_SERVICE_URL=http://log-service:5001
     depends_on:
       postgres:
         condition: service_healthy
