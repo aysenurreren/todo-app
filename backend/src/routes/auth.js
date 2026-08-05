@@ -9,6 +9,7 @@ import { sendVerificationEmail, sendLoginAlertEmail, sendPasswordResetEmail } fr
 import logger from "../logger.js";
 import { validate, schemas, sanitizeRegister, checkSanitization } from "../middleware/validate.js";
 import { logAction } from "../audit.js";
+import { sendLog } from "../logClient.js";
 
 const router = Router();
 
@@ -74,6 +75,14 @@ router.post("/register", sanitizeRegister, checkSanitization, validate(schemas.r
     }
     logger.error(`[Register] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
+
+     await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user.id, path: req.path },
+  });
   }
 });
 
@@ -113,7 +122,16 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
       // 5. denemede uyarı maili gönder
       if (parseInt(newAttempts) === 5 && user) {
         await sendLoginAlertEmail(email);
+
         logger.warn(`[Login] Şüpheli giriş uyarısı gönderildi: ${email}`);
+
+        await sendLog({
+          level:   "WARN",
+          service: "auth",
+          action:  "RATE_LIMIT",
+          message: `5 başarısız deneme: ${email}`,
+          metadata: { email, ip: req.headers["x-real-ip"] || req.ip },
+  });
   }
 
       return res.status(401).json({
@@ -139,6 +157,14 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
     // ── Başarılı giriş → sayacı sıfırla ───────────────────────
     await resetLoginAttempts(email);
 
+    await sendLog({
+      level:   "INFO",
+      service: "auth",
+      action:  "LOGIN",
+      message: `Kullanıcı giriş yaptı: ${email}`,
+      metadata: { userId: user.id, ip: req.headers["x-real-ip"] || req.ip },
+});
+
     const accessToken = await issueToken(user, res);
     return res.status(200).json({
       user: { id: user.id, email: user.email },
@@ -148,6 +174,14 @@ router.post("/login", sanitizeRegister, checkSanitization, validate(schemas.logi
   } catch (err) {
     console.error("[Login]", err.message);
     return res.status(500).json({ error: "Internal Server Error" });
+
+     await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user.id, path: req.path },
+  });
   }
 });
 
@@ -204,6 +238,14 @@ router.post("/verify", async (req, res) => {
   } catch (err) {
     logger.error(`[Verify] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
+
+     await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user.id, path: req.path },
+  });
   }
 });
 
@@ -262,6 +304,14 @@ router.post("/resend-code", async (req, res) => {
   } catch (err) {
     logger.error(`[Resend Code] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
+
+     await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user.id, path: req.path },
+  });
   }
 });
 
@@ -311,6 +361,14 @@ router.post("/forgot-password", async (req, res) => {
   } catch (err) {
     logger.error(`[ForgotPassword] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
+
+     await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user.id, path: req.path },
+  });
   }
 });
 
@@ -371,6 +429,14 @@ router.post("/reset-password", async (req, res) => {
   } catch (err) {
     logger.error(`[ResetPassword] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
+
+     await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user.id, path: req.path },
+  });
   }
 });
 
@@ -410,6 +476,14 @@ router.post("/refresh", async (req, res) => {
   } catch (err) {
     logger.error(`[Refresh] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
+
+     await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user.id, path: req.path },
+  });
   }
 });
 
@@ -428,6 +502,14 @@ router.post("/logout", authenticate, async (req, res) => {
   } catch (err) {
     logger.error(`[Logout] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
+
+     await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user.id, path: req.path },
+  });
   }
 });
 
