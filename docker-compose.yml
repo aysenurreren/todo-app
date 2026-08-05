@@ -113,9 +113,42 @@ services:
     networks:
       - todo_net
 
+  # ── Log PostgreSQL ─────────────────────────────────────────────
+  log-postgres:
+    image: postgres:16-alpine
+    container_name: todo_log_postgres
+    environment:
+      - POSTGRES_USER=log_user
+      - POSTGRES_PASSWORD=log_pass
+      - POSTGRES_DB=log_db
+    volumes:
+      - ./log-service/src/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - log_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U log_user -d log_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - todo_net
+
+  # ── Log Service ────────────────────────────────────────────────
+  log-service:
+    build: ./log-service
+    container_name: todo_log_service
+    environment:
+      - PORT=5001
+      - LOG_DATABASE_URL=postgresql://log_user:log_pass@log-postgres:5432/log_db
+    depends_on:
+      log-postgres:
+        condition: service_healthy
+    networks:
+      - todo_net
+
 networks:
   todo_net:
     driver: bridge
     
 volumes:
   postgres_data:
+  log_postgres_data:
