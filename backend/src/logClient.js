@@ -1,15 +1,32 @@
-// ── Log Servisi İstemcisi ──────────────────────────────────────
-const LOG_SERVICE_URL = process.env.LOG_SERVICE_URL || "http://log-service:5001";
+import { createClient } from "redis";
+
+const publisher = createClient({
+  url: process.env.REDIS_URL,
+  password: process.env.REDIS_PASSWORD,
+  socket: {
+    reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
+  },
+});
+
+publisher.on("error", (err) =>
+  console.error("[LogClient] Redis hatası:", err.message)
+);
+
+await publisher.connect();
+console.log("[LogClient] Redis bağlandı");
 
 export const sendLog = async ({ level, service, action, message, metadata }) => {
   try {
-    await fetch(`${LOG_SERVICE_URL}/logs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ level, service, action, message, metadata }),
+    const event = JSON.stringify({
+      level,
+      service,
+      action:   action   || null,
+      message:  message  || null,
+      metadata: metadata || null,
     });
+
+    await publisher.publish("logs", event);
   } catch (err) {
-    // Log servisi çökse bile uygulama durmuyor
-    console.error("[LogClient] Log gönderilemedi:", err.message);
+    console.error("[LogClient] Event gönderilemedi:", err.message);
   }
 };
