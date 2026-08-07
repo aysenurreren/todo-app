@@ -142,6 +142,7 @@ services:
     environment:
       - PORT=5001
       - LOG_DATABASE_URL=postgresql://log_user:log_pass@log-postgres:5432/log_db
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
     depends_on:
       log-postgres:
         condition: service_healthy
