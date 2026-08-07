@@ -1,12 +1,51 @@
-import express from "express";
-import { query } from "./db/pool.js";
+import express    from "express";
+import { createClient } from "redis";
+import { query }  from "./db/pool.js";
 
 const app  = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(express.json());
 
-// ── Sağlık Kontrolü ───────────────────────────────────────────
+// ── Redis Subscriber ───────────────────────────────────────────
+const subscriber = createClient({
+  url: process.env.REDIS_URL,
+  socket: {
+    reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
+  },
+});
+
+subscriber.on("error", (err) =>
+  console.error("[Subscriber] Redis hatası:", err.message)
+);
+
+await subscriber.connect();
+console.log("[Subscriber] Redis bağlandı");
+
+// "logs" kanalını dinle
+await subscriber.subscribe("logs", async (message) => {
+  try {
+    const { level, service, action, message: msg, metadata } = JSON.parse(message);
+
+    await query(
+      `INSERT INTO logs (level, service, action, message, metadata)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        level.toUpperCase(),
+        service,
+        action   || null,
+        msg      || null,
+        metadata ? JSON.stringify(metadata) : null,
+      ]
+    );
+
+    console.log(`[Log] ${level} | ${service} | ${action}`);
+  } catch (err) {
+    console.error("[Subscriber] Log yazılamadı:", err.message);
+  }
+});
+
+// ── HTTP Endpoint'leri ─────────────────────────────────────────
 app.get("/health", async (req, res) => {
   try {
     await query("SELECT 1");
@@ -16,49 +55,13 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// ── Log Kaydet ─────────────────────────────────────────────────
-app.post("/logs", async (req, res) => {
-  try {
-    const { level, service, action, message, metadata } = req.body;
-
-    // Zorunlu alan kontrolü
-    if (!level || !service) {
-      return res.status(400).json({ error: "level ve service zorunludur." });
-    }
-
-    // Geçerli seviye mi?
-    const validLevels = ["INFO", "WARN", "ERROR"];
-    if (!validLevels.includes(level.toUpperCase())) {
-      return res.status(400).json({ error: "Geçersiz level. INFO, WARN veya ERROR olmalı." });
-    }
-
-    await query(
-      `INSERT INTO logs (level, service, action, message, metadata)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [
-        level.toUpperCase(),
-        service,
-        action   || null,
-        message  || null,
-        metadata ? JSON.stringify(metadata) : null,
-      ]
-    );
-
-    return res.status(201).json({ success: true });
-  } catch (err) {
-    console.error("[POST /logs]", err.message);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-// ── Logları Getir ──────────────────────────────────────────────
 app.get("/logs", async (req, res) => {
   try {
     const { level, service, limit = 50 } = req.query;
 
-    let sql    = "SELECT * FROM logs WHERE 1=1";
+    let sql      = "SELECT * FROM logs WHERE 1=1";
     const params = [];
-    let   i    = 1;
+    let   i      = 1;
 
     if (level) {
       sql += ` AND level = $${i++}`;
@@ -81,7 +84,6 @@ app.get("/logs", async (req, res) => {
   }
 });
 
-// ── Sunucu Başlat ──────────────────────────────────────────────
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`[Log Service] ${PORT} portunda çalışıyor`);
 });
