@@ -5,6 +5,7 @@ import logger from "../logger.js";
 import { validate, schemas, sanitizeTask, checkSanitization } from "../middleware/validate.js";
 import { cacheUserTasks, getCachedTasks, invalidateTaskCache } from "../db/redis.js";
 import { logAction } from "../audit.js";
+import { sendLog } from "../logClient.js";
 
 const router = Router();
 
@@ -85,6 +86,24 @@ router.post("/", authenticate, sanitizeTask, checkSanitization, validate(schemas
       ipAddress:  req.headers["x-real-ip"] || req.ip,
   });
 
+        // Audit log
+    await logAction({
+      userId:     req.user.id,
+      action:     "TASK_CREATED",
+      entityType: "task",
+      entityId:   rows[0].id,
+      ipAddress:  req.headers["x-real-ip"] || req.ip,
+    });
+
+    // Log servisi
+    await sendLog({
+      level:   "INFO",
+      service: "tasks",
+      action:  "TASK_CREATED",
+      message: `Görev oluşturuldu: ${rows[0].title}`,
+      metadata: { userId: req.user.id, taskId: rows[0].id },
+    });
+
     return res.status(201).json({ task: rows[0] });
   } catch (err) {
     logger.error(`[POST /tasks] ${err.message}`);
@@ -149,6 +168,14 @@ router.delete("/:id", authenticate, async (req, res) => {
       entityType: "task",
       entityId:   id,
       ipAddress:  req.headers["x-real-ip"] || req.ip,
+  });
+
+    await sendLog({
+    level:   "INFO",
+    service: "tasks",
+    action:  "TASK_DELETED",
+    message: `Görev silindi`,
+    metadata: { userId: req.user.id, taskId: id },
   });
 
 
