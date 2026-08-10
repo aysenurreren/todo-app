@@ -60,6 +60,13 @@ router.get("/", authenticate, async (req, res) => {
 
     return res.status(200).json(response);
   } catch (err) {
+    await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_LIST_ERROR",
+      message: err.message,
+      metadata: { userId: req.user?.id },
+  });
     logger.error(`[GET /tasks] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
@@ -86,15 +93,6 @@ router.post("/", authenticate, sanitizeTask, checkSanitization, validate(schemas
       ipAddress:  req.headers["x-real-ip"] || req.ip,
   });
 
-        // Audit log
-    await logAction({
-      userId:     req.user.id,
-      action:     "TASK_CREATED",
-      entityType: "task",
-      entityId:   rows[0].id,
-      ipAddress:  req.headers["x-real-ip"] || req.ip,
-    });
-
     // Log servisi
     await sendLog({
       level:   "INFO",
@@ -106,6 +104,13 @@ router.post("/", authenticate, sanitizeTask, checkSanitization, validate(schemas
 
     return res.status(201).json({ task: rows[0] });
   } catch (err) {
+    await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_CREATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user?.id },
+  });
     logger.error(`[POST /tasks] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
@@ -135,6 +140,13 @@ router.put("/:id", authenticate, sanitizeTask, checkSanitization, validate(schem
 
     return res.status(200).json({ task: rows[0] });
   } catch (err) {
+    await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_UPDATE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user?.id },
+  });
     logger.error(`[PUT /tasks] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
@@ -181,6 +193,13 @@ router.delete("/:id", authenticate, async (req, res) => {
 
     return res.status(204).send();
   } catch (err) {
+    await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_DELETE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user?.id },
+  });
     logger.error(`[DELETE /tasks] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
@@ -215,9 +234,24 @@ router.post("/:id/restore", authenticate, async (req, res) => {
       ipAddress:  req.headers["x-real-ip"] || req.ip,
   });
 
+    await sendLog({
+      level:   "INFO",
+      service: "tasks",
+      action:  "TASK_RESTORED",
+      message: `Görev geri alındı`,
+      metadata: { userId: req.user.id, taskId: id },
+    });
+
 
     return res.status(200).json({ message: "Görev geri alındı." });
   } catch (err) {
+      await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_RESTORE_ERROR",
+      message: err.message,
+      metadata: { userId: req.user?.id },
+  });
     logger.error(`[RESTORE /tasks] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
@@ -236,6 +270,13 @@ router.get("/deleted", authenticate, async (req, res) => {
 
     return res.status(200).json({ tasks: rows });
   } catch (err) {
+    await sendLog({
+      level:   "ERROR",
+      service: "tasks",
+      action:  "TASK_LIST_ERROR",
+      message: err.message,
+      metadata: { userId: req.user?.id },
+  });
     logger.error(`[GET /tasks/deleted] ${err.message}`);
     return res.status(500).json({ error: "Internal Server Error" });
   }
