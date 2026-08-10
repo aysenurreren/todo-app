@@ -2,7 +2,6 @@ import { createClient } from "redis";
 
 const publisher = createClient({
   url: process.env.REDIS_URL,
-  password: process.env.REDIS_PASSWORD,
   socket: {
     reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
   },
@@ -15,18 +14,20 @@ publisher.on("error", (err) =>
 await publisher.connect();
 console.log("[LogClient] Redis bağlandı");
 
+// Stream adı
+const STREAM = "logs-stream";
+
+// Stream oluştur (yoksa otomatik oluşturulur)
 export const sendLog = async ({ level, service, action, message, metadata }) => {
   try {
-    const event = JSON.stringify({
-      level,
-      service,
-      action:   action   || null,
-      message:  message  || null,
-      metadata: metadata || null,
+    await publisher.xAdd(STREAM, "*", {
+      level:    level || "INFO",
+      service:  service || "unknown",
+      action:   action  || "",
+      message:  message || "",
+      metadata: metadata ? JSON.stringify(metadata) : "{}",
     });
-
-    await publisher.publish("logs", event);
   } catch (err) {
-    console.error("[LogClient] Event gönderilemedi:", err.message);
+    console.error("[LogClient] Stream'e yazılamadı:", err.message);
   }
 };
